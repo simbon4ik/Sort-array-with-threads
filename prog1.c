@@ -2,22 +2,32 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-
-void merge_sort(void **a, size_t len, size_t size, int(*compare)(const void *, const void *)); //a - указ.на массив, len - длина, size - размер одного элем.
+void merge_sort(void *a, size_t len, size_t size, int(*compare)(const void *, const void *)); //a - указ.на массив, len - длина, size - размер одного элем.
 int my_compare(const void *a, const void *b);
 
 int main(){
-    int *test = (int*)calloc(5, sizeof(int));
-    test[0] = 6;
-    test[1] = 4;
-    test[2] = 2;
-    test[3] = 5;
-    test[4] = 3;
-    merge_sort(&test, 5, sizeof(int), my_compare);
-    for (int i = 0; i < 5; i++){
+     
+    //Тестовый запуск
+    int *test = (int*)calloc(10, sizeof(int));
+    if (test == NULL) return 1;
+    test[0] = 64;
+    test[1] = 43;
+    test[2] = 22;
+    test[3] = 55;
+    test[4] = 81;
+    test[5] = 48;
+    test[6] = 24;
+    test[7] = 83;
+    test[8] = 74;
+    test[9] = 35;
+    merge_sort(test, 10, sizeof(int), my_compare);
+    for (int i = 0; i < 10; ++i){
         printf("%d ", test[i]);
     }
     printf("\n");
+    free(test);
+    
+    
     return 0;
 }
 
@@ -27,7 +37,7 @@ void swap(int *a, int *b){
     *b = temp;
 }
 
-void* merge_blocks(void* a, size_t first_len, size_t second_len, size_t size, int(*compare)(const void*, const void *)){
+void merge_blocks(void* a, size_t first_len, size_t second_len, size_t size, int(*compare)(const void*, const void *)){
     void* result = (void*)malloc((first_len+second_len)*size);
     int pos = 0; //Позиция в результирующем
     int i = 0; //Индекс элементов первого массива
@@ -35,13 +45,11 @@ void* merge_blocks(void* a, size_t first_len, size_t second_len, size_t size, in
     while ( (j != second_len) && (i != first_len) ){
         if (compare(a + i*size, a + (first_len + j)*size) > 0){ //Элемент первого блока > элемента второго блока
             *(int*)(result+pos*size) = *(int*)(a + (first_len + j)*size);
-            printf("Первый элемент %d \n", *(int*)(result+pos*size));
             j++;
             pos++;
         }
         else{
             *(int*)(result+pos*size) = *(int*)(a + i*size);
-            printf("Второй элемент %d \n", *(int*)(result+pos*size));
             i++;
             pos++;
         }
@@ -57,22 +65,18 @@ void* merge_blocks(void* a, size_t first_len, size_t second_len, size_t size, in
         pos++;
 
     }
-    
-    return result;
+    for (int k = 0; k < first_len + second_len; ++k)
+        *(int*)(a+k*size) = *(int*)(result + k*size);
+    free(result);
 }
 
 
 
-void merge_sort(void **a, size_t len, size_t size, int(*compare)(const void *, const void *)){ //a - указ.на массив, len - длина, size - размер одного элем.
-        //Поменять ВСЕ a на *а
+void merge_sort(void *a, size_t len, size_t size, int(*compare)(const void *, const void *)){ //a - указ.на массив, len - длина, size - размер одного элем.
     if (len == 1) return;
     if (len == 2){
         if (compare(a, a+size) > 0 ){
             swap(a, a+size);
-    for (int i = 0; i < len; i++){
-        printf("%d ",  *((int*)(a+i*size)));
-    }
-    printf("\n");
         }
         return;
     }
@@ -80,18 +84,8 @@ void merge_sort(void **a, size_t len, size_t size, int(*compare)(const void *, c
     size_t new_second_len = len - new_first_len;
     merge_sort(a, new_first_len, size, compare);   //Вызов merge для первой половины
     merge_sort(a+new_first_len*size, new_second_len, size, compare); //Вызов merge для второй
-    a = merge_blocks(a, new_first_len, new_second_len, size, compare); //Слияние блоков
+    merge_blocks(a, new_first_len, new_second_len, size, compare); //Слияние блоков
 
-    /*if (new_second_len > new_first_len){
-        if (compare(a + (new_first_len - 1)*size, a + (new_first_len + new_second_len - 1)*size) > 0){
-        swap(a + (new_first_len - 1)*size, a + (new_first_len + new_second_len - 1)*size);
-        }
-    }
-    */
-    for (int i = 0; i < len; i++){
-        printf("%d ",  *((int*)(a+i*size)));
-    }
-    printf("\n");
 }
 
 int my_compare(const void *a, const void *b){
