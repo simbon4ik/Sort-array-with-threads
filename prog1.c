@@ -1,12 +1,20 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
+
+typedef struct{
+    void *array;
+    size_t len;
+    size_t size;
+    int(*compare)(const void *, const void *);
+}Struct_for_merge;
+
 
 void merge_sort(void *a, size_t len, size_t size, int(*compare)(const void *, const void *)); //a - указ.на массив, len - длина, size - размер одного элем.
 int my_compare(const void *a, const void *b);
 
 int main(){
-     
     //Тестовый запуск
     int *test = (int*)calloc(10, sizeof(int));
     if (test == NULL) return 1;
@@ -20,7 +28,15 @@ int main(){
     test[7] = 83;
     test[8] = 74;
     test[9] = 35;
-    merge_sort(test, 10, sizeof(int), my_compare);
+    //
+
+    size_t cnt_phreads = 5;//sysconf(_SC_NPROCESSORS_ONLN); //Кол-во потоков на компьютере
+    if (cnt_phreads == -1) return 1;
+    pthread_t threads[cnt_phreads];
+    for (int i = 0; i < cnt_phreads; ++i){
+        pthread_create(&(threads[i]), NULL, merge_sort, test+i*2*size, 2, sizeof(int), my_compare);
+    }
+    pthread_exit(NULL); 
     for (int i = 0; i < 10; ++i){
         printf("%d ", test[i]);
     }
