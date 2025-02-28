@@ -14,8 +14,9 @@ typedef struct{
 void merge_sort(void *a, size_t len, size_t size, int(*compare)(const void *, const void *)); //a - указ.на массив, len - длина, size - размер одного элем.
 int my_compare(const void *a, const void *b);
 
+void merge_blocks(void* a, size_t first_len, size_t second_len, size_t size, int(*compare)(const void*, const void *));
 
-void* merge_sort_structure(void *structure){    //Всомогательная функция для pthread_create, т.к. нужна функция void*, принимающая void*
+void* merge_sort_structure(void *structure){    //Вспомогательная функция для pthread_create, т.к. нужна функция void*, принимающая void*
     merge_sort( ( (struct_for_merge*)structure) ->array, ((struct_for_merge*)structure) -> len, ((struct_for_merge*)structure) -> size, ((struct_for_merge*)structure) -> compare);
     return NULL;
 }
@@ -35,18 +36,28 @@ int main(){
     test[8] = 74;
     test[9] = 35;
     //
-
-    size_t cnt_phreads = 5;//sysconf(_SC_NPROCESSORS_ONLN); //Кол-во потоков на компьютере
-    if (cnt_phreads == -1) return 1;
-    pthread_t threads[cnt_phreads];
-    struct_for_merge structure = {test, 10, sizeof(int), my_compare};
-    merge_sort_structure(&structure);
-
-    /*for (int i = 0; i < cnt_phreads; ++i){
-        pthread_create(&(threads[i]), NULL, merge_sort_structure, &structure);
+    size_t len = 10;
+    size_t cnt_pthreads = 4;//sysconf(_SC_NPROCESSORS_ONLN); //Кол-во потоков на компьютере
+    if (cnt_pthreads == -1) return 1;
+    pthread_t threads[cnt_pthreads];
+    struct_for_merge structures[cnt_pthreads];
+    size_t diff = 10 / cnt_pthreads; // Блок какого размера на один поток = 2
+    for (int i = 0; i < cnt_pthreads; ++i){
+        structures[i] = (struct_for_merge){test+i*diff, diff, sizeof(int), my_compare};
+        if (i == cnt_pthreads - 1)  structures[i] = (struct_for_merge){test+i*diff, len-i*diff, sizeof(int), my_compare};   //Обработка последнего потока, чтобы точно доработал до конца (учитываем нецелочисленное деление)
+        pthread_create(&(threads[i]), NULL, merge_sort_structure, &(structures[i]) );   //Получим сортировку каждого блока от каждого потока
     }
-    pthread_exit(NULL); 
-    */
+    struct_for_merge structure = {test, 10, sizeof(int), my_compare}; 
+    
+    for (int i = 0; i < cnt_pthreads; ++i){
+        pthread_join(threads[i], NULL); //Завершаем потоки
+    }
+    for (int i = 1; i < cnt_pthreads; ++i){
+        if (i == cnt_pthreads - 1){
+             merge_blocks(test, i*diff, len-i*diff, sizeof(int), my_compare );  //Обработка последнего объединения, чтобы точно доработал до конца (учитываем нецелочисленное деление)
+        }else merge_blocks(test, diff*i, diff, sizeof(int), my_compare);
+    }
+ 
     for (int i = 0; i < 10; ++i){
         printf("%d ", test[i]);
     }
